@@ -60,12 +60,12 @@ services:
       ANTIVIRUS_SCANNER_TYPE: clamav
       ANTIVIRUS_CLAMAV_SOCKET: /var/run/clamav/clamd.sock
     volumes:
-      - ./config/opencloud/csp.yaml:/etc/opencloud/csp.yaml
-      - ./config/opencloud/banned-password-list.txt:/etc/opencloud/banned-password-list.txt
+      - ../files/config/opencloud/csp.yaml:/etc/opencloud/csp.yaml
+      - ../files/config/opencloud/banned-password-list.txt:/etc/opencloud/banned-password-list.txt
       - ${OC_CONFIG_DIR:-opencloud-config}:/etc/opencloud
       - ${OC_DATA_DIR:-opencloud-data}:/var/lib/opencloud
       - ${OC_APPS_DIR:-./config/opencloud/apps}:/var/lib/opencloud/web/assets/apps
-      - ./config/opencloud/proxy.yaml:/etc/opencloud/proxy.yaml
+      - ../files/config/opencloud/proxy.yaml:/etc/opencloud/proxy.yaml
       - clamav-socket:/var/run/clamav
     logging:
       driver: ${LOG_DRIVER:-local}
@@ -186,7 +186,7 @@ services:
       driver: ${LOG_DRIVER:-local}
     restart: always
     volumes:
-      - ./config/radicale/config:/etc/radicale/config
+      - ../files/config/radicale/config:/etc/radicale/config
       - ${RADICALE_DATA_DIR:-radicale-data}:/var/lib/radicale
 
   clamav:
