@@ -29,6 +29,7 @@ services:
       OC_LOG_PRETTY: ${LOG_PRETTY:-false}
       
       # Services & Security
+      OC_OIDC_ISSUER: ${OC_OIDC_ISSUER}
       OC_ADD_RUN_SERVICES: ${START_ADDITIONAL_SERVICES}
       PROXY_TLS: "false"
       OC_INSECURE: ${INSECURE:-false}
@@ -70,14 +71,7 @@ services:
     logging:
       driver: ${LOG_DRIVER:-local}
     restart: always
-    labels:
-      - traefik.docker.network=dokploy-network
-      - traefik.http.routers.storage-opencloud-ix8ggs-117-web.rule=Host(`cloud.alexvl.fr`)
-      - traefik.http.routers.storage-opencloud-ix8ggs-117-web.entrypoints=web
-      # FIXED: Changed from 443 to 9200 to match PROXY_HTTP_ADDR
-      - traefik.http.services.storage-opencloud-ix8ggs-117-web.loadbalancer.server.port=9200
-      - traefik.http.routers.storage-opencloud-ix8ggs-117-web.service=storage-opencloud-ix8ggs-117-web
-      - traefik.enable=true
+  
 
   collaboration:
     image: ${OC_DOCKER_IMAGE:-opencloudeu/opencloud-rolling}:${OC_DOCKER_TAG:-latest}
