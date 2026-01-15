@@ -1,77 +1,64 @@
----
 services:
   opencloud:
     image: ${OC_DOCKER_IMAGE:-opencloudeu/opencloud-rolling}:${OC_DOCKER_TAG:-latest}
     container_name: opencloud
     user: ${OC_CONTAINER_UID_GID:-1000:1000}
+    # IMPORTANT: Load the .env file so Keycloak settings are applied
+    env_file:
+      - .env
     networks:
       - opencloud-net
       - dokploy-network
     expose:
       - 9200
-      - 9205 # Metrics
+      - 9205
     entrypoint:
       - /bin/sh
-    command: ["-c", "opencloud init || true; opencloud server"]
+    command:
+      - -c
+      - opencloud init || true; opencloud server
     environment:
-      # Network Binding
-      PROXY_HTTP_ADDR: "0.0.0.0:9200"
-      PROXY_DEBUG_ADDR: "0.0.0.0:9205" # Monitoring
-      
-      # Base Settings
-      OC_ADD_RUN_SERVICES: ${START_ADDITIONAL_SERVICES}
+      # Networking
+      PROXY_HTTP_ADDR: 0.0.0.0:9200
+      PROXY_DEBUG_ADDR: 0.0.0.0:9205
       OC_URL: https://${OC_DOMAIN:-cloud.opencloud.test}
+      
+      # Logging
       OC_LOG_LEVEL: ${LOG_LEVEL:-info}
-      OC_LOG_COLOR: "${LOG_PRETTY:-false}"
-      OC_LOG_PRETTY: "${LOG_PRETTY:-false}"
+      OC_LOG_COLOR: ${LOG_PRETTY:-false}
+      OC_LOG_PRETTY: ${LOG_PRETTY:-false}
+      
+      # Services & Security
+      OC_ADD_RUN_SERVICES: ${START_ADDITIONAL_SERVICES}
       PROXY_TLS: "false"
-      OC_INSECURE: "${INSECURE:-false}"
-      PROXY_ENABLE_BASIC_AUTH: "${PROXY_ENABLE_BASIC_AUTH:-false}"
-      IDM_CREATE_DEMO_USERS: "${DEMO_USERS:-false}"
-      IDM_ADMIN_PASSWORD: "${INITIAL_ADMIN_PASSWORD}"
+      OC_INSECURE: ${INSECURE:-false}
       
-      # SMTP
-      NOTIFICATIONS_SMTP_HOST: "${SMTP_HOST}"
-      NOTIFICATIONS_SMTP_PORT: "${SMTP_PORT}"
-      NOTIFICATIONS_SMTP_SENDER: "${SMTP_SENDER:-OpenCloud Notifications <notifications@cloud.opencloud.test>}"
-      NOTIFICATIONS_SMTP_USERNAME: "${SMTP_USERNAME}"
-      NOTIFICATIONS_SMTP_PASSWORD: "${SMTP_PASSWORD}"
-      NOTIFICATIONS_SMTP_INSECURE: "${SMTP_INSECURE:-false}"
-      NOTIFICATIONS_SMTP_AUTHENTICATION: "${SMTP_AUTHENTICATION}"
-      NOTIFICATIONS_SMTP_ENCRYPTION: "${SMTP_TRANSPORT_ENCRYPTION:-none}"
+      # SMTP / Notifications
+      NOTIFICATIONS_SMTP_HOST: ${SMTP_HOST}
+      NOTIFICATIONS_SMTP_PORT: ${SMTP_PORT}
+      NOTIFICATIONS_SMTP_SENDER: ${SMTP_SENDER:-OpenCloud Notifications <notifications@cloud.opencloud.test>}
+      NOTIFICATIONS_SMTP_USERNAME: ${SMTP_USERNAME}
+      NOTIFICATIONS_SMTP_PASSWORD: ${SMTP_PASSWORD}
+      NOTIFICATIONS_SMTP_INSECURE: ${SMTP_INSECURE:-false}
+      NOTIFICATIONS_SMTP_AUTHENTICATION: ${SMTP_AUTHENTICATION}
+      NOTIFICATIONS_SMTP_ENCRYPTION: ${SMTP_TRANSPORT_ENCRYPTION:-none}
       
-      # Frontend/Policy
-      FRONTEND_ARCHIVER_MAX_SIZE: "10000000000"
-      FRONTEND_CHECK_FOR_UPDATES: "${CHECK_FOR_UPDATES:-true}"
-      PROXY_CSP_CONFIG_FILE_LOCATION: /etc/opencloud/csp.yaml
-      OC_PASSWORD_POLICY_BANNED_PASSWORDS_LIST: banned-password-list.txt
-      OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD: "${OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD:-true}"
-      OC_SHARING_PUBLIC_WRITEABLE_SHARE_MUST_HAVE_PASSWORD: "${OC_SHARING_PUBLIC_WRITEABLE_SHARE_MUST_HAVE_PASSWORD:-false}"
-      OC_PASSWORD_POLICY_DISABLED: "${OC_PASSWORD_POLICY_DISABLED:-false}"
-      OC_DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE}
-
-      # Collabora Configuration
+      # Feature Flags
+      FRONTEND_CHECK_FOR_UPDATES: ${CHECK_FOR_UPDATES:-true}
+      OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD: ${OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD:-true}
+      
+      # Collaboration & Tika
       COLLABORA_DOMAIN: ${COLLABORA_DOMAIN:-collabora.opencloud.test}
-      NATS_NATS_HOST: 0.0.0.0
-      GATEWAY_GRPC_ADDR: 0.0.0.0:9142
-      FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: eu.opencloud.api.collaboration
-      GRAPH_AVAILABLE_ROLES: "b1e2218d-eef8-4d4c-b82d-0f1a1b48f3b5,a8d5fe5e-96e3-418d-825b-534dbdf22b99,fb6c3e19-e378-47e5-b277-9732f9de6e21,58c63c02-1d89-4572-916a-870abc5a1b7d,2d00ce52-1fc2-4dbc-8b95-a73b73395f5a,1c996275-f1c9-4e71-abdf-a42f6495e960,312c0871-5ef7-4b3a-85b6-0e4074c64049,aa97fe03-7980-45ac-9e50-b325749fd7e6"
-
-      # Full Text Search (Tika)
       SEARCH_EXTRACTOR_TYPE: tika
       SEARCH_EXTRACTOR_TIKA_TIKA_URL: http://tika:9998
       FRONTEND_FULL_TEXT_SEARCH_ENABLED: "true"
-
-      # Antivirus (ClamAV)
-      POSTPROCESSING_STEPS: "virusscan"
-      STORAGE_USERS_DATA_GATEWAY_URL: "http://opencloud:9200/data"
+      
+      # Antivirus
+      POSTPROCESSING_STEPS: virusscan
       ANTIVIRUS_MAX_SCAN_SIZE: ${ANTIVIRUS_MAX_SCAN_SIZE:-100MB}
       ANTIVIRUS_INFECTED_FILE_HANDLING: abort
-      ANTIVIRUS_MAX_SCAN_SIZE_MODE: ${ANTIVIRUS_MAX_SCAN_SIZE_MODE:-partial}
-      ANTIVIRUS_WORKERS: 1
-      ANTIVIRUS_CLAMAV_SOCKET: /var/run/clamav/clamd.sock
       ANTIVIRUS_SCANNER_TYPE: clamav
-
+      ANTIVIRUS_CLAMAV_SOCKET: /var/run/clamav/clamd.sock
     volumes:
       - ./config/opencloud/csp.yaml:/etc/opencloud/csp.yaml
       - ./config/opencloud/banned-password-list.txt:/etc/opencloud/banned-password-list.txt
@@ -83,11 +70,21 @@ services:
     logging:
       driver: ${LOG_DRIVER:-local}
     restart: always
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.storage-opencloud-ix8ggs-117-web.rule=Host(`cloud.alexvl.fr`)
+      - traefik.http.routers.storage-opencloud-ix8ggs-117-web.entrypoints=web
+      # FIXED: Changed from 443 to 9200 to match PROXY_HTTP_ADDR
+      - traefik.http.services.storage-opencloud-ix8ggs-117-web.loadbalancer.server.port=9200
+      - traefik.http.routers.storage-opencloud-ix8ggs-117-web.service=storage-opencloud-ix8ggs-117-web
+      - traefik.enable=true
 
   collaboration:
     image: ${OC_DOCKER_IMAGE:-opencloudeu/opencloud-rolling}:${OC_DOCKER_TAG:-latest}
     container_name: collaboration
     user: ${OC_CONTAINER_UID_GID:-1000:1000}
+    env_file:
+      - .env
     networks:
       - opencloud-net
       - dokploy-network
@@ -100,19 +97,21 @@ services:
         condition: service_healthy
     entrypoint:
       - /bin/sh
-    command: [ "-c", "opencloud collaboration server" ]
+    command:
+      - -c
+      - opencloud collaboration server
     environment:
       COLLABORATION_GRPC_ADDR: 0.0.0.0:9301
       COLLABORATION_HTTP_ADDR: 0.0.0.0:9300
-      MICRO_REGISTRY: "nats-js-kv"
-      MICRO_REGISTRY_ADDRESS: "opencloud:9233"
+      MICRO_REGISTRY: nats-js-kv
+      MICRO_REGISTRY_ADDRESS: opencloud:9233
       COLLABORATION_WOPI_SRC: https://${WOPISERVER_DOMAIN:-wopiserver.opencloud.test}
-      COLLABORATION_APP_NAME: "CollaboraOnline"
-      COLLABORATION_APP_PRODUCT: "Collabora"
+      COLLABORATION_APP_NAME: CollaboraOnline
+      COLLABORATION_APP_PRODUCT: Collabora
       COLLABORATION_APP_ADDR: https://${COLLABORA_DOMAIN:-collabora.opencloud.test}
       COLLABORATION_APP_ICON: https://${COLLABORA_DOMAIN:-collabora.opencloud.test}/favicon.ico
-      COLLABORATION_APP_INSECURE: "${INSECURE:-true}"
-      COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "${INSECURE:-true}"
+      COLLABORATION_APP_INSECURE: ${INSECURE:-true}
+      COLLABORATION_CS3API_DATAGATEWAY_INSECURE: ${INSECURE:-true}
       COLLABORATION_LOG_LEVEL: ${LOG_LEVEL:-info}
       OC_URL: https://${OC_DOMAIN:-cloud.opencloud.test}
     volumes:
@@ -131,7 +130,7 @@ services:
       - 9980
     environment:
       aliasgroup1: https://${WOPISERVER_DOMAIN:-wopiserver.opencloud.test}
-      DONT_GEN_SSL_CERT: "YES"
+      DONT_GEN_SSL_CERT: YES
       extra_params: |
         --o:ssl.enable=${COLLABORA_SSL_ENABLE:-true} \
         --o:ssl.ssl_verification=${COLLABORA_SSL_VERIFICATION:-true} \
@@ -150,10 +149,17 @@ services:
     logging:
       driver: ${LOG_DRIVER:-local}
     restart: always
-    entrypoint: [ '/bin/bash', '-c' ]
-    command: [ 'coolconfig generate-proof-key && /start-collabora-online.sh' ]
+    entrypoint:
+      - /bin/bash
+      - -c
+    command:
+      - coolconfig generate-proof-key && /start-collabora-online.sh
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9980/hosting/discovery" ]
+      test:
+        - CMD
+        - curl
+        - -f
+        - http://localhost:9980/hosting/discovery
       interval: 15s
       timeout: 10s
       retries: 5
@@ -198,13 +204,13 @@ services:
     restart: always
 
 volumes:
-  opencloud-config:
-  opencloud-data:
-  radicale-data:
-  clamav-db:
-  clamav-socket:
+  opencloud-config: null
+  opencloud-data: null
+  radicale-data: null
+  clamav-db: null
+  clamav-socket: null
 
 networks:
-  opencloud-net:
+  opencloud-net: null
   dokploy-network:
     external: true
