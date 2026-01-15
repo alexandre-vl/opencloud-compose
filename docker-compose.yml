@@ -33,6 +33,7 @@ services:
       OC_ADD_RUN_SERVICES: ${START_ADDITIONAL_SERVICES}
       PROXY_TLS: "false"
       OC_INSECURE: ${INSECURE:-false}
+      PROXY_CSP_CONFIG_FILE_LOCATION: /etc/opencloud/csp.yaml
       
       # SMTP / Notifications
       NOTIFICATIONS_SMTP_HOST: ${SMTP_HOST}
